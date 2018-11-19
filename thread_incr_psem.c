@@ -1,12 +1,12 @@
 /*************************************************************************\
-*                  Copyright (C) Michael Kerrisk, 2018.                   *
-*                                                                         *
-* This program is free software. You may use, modify, and redistribute it *
-* under the terms of the GNU General Public License as published by the   *
-* Free Software Foundation, either version 3 or (at your option) any      *
-* later version. This program is distributed without any warranty.  See   *
-* the file COPYING.gpl-v3 for details.                                    *
-\*************************************************************************/
+ *                  Copyright (C) Michael Kerrisk, 2018.                   *
+ *                                                                         *
+ * This program is free software. You may use, modify, and redistribute it *
+ * under the terms of the GNU General Public License as published by the   *
+ * Free Software Foundation, either version 3 or (at your option) any      *
+ * later version. This program is distributed without any warranty.  See   *
+ * the file COPYING.gpl-v3 for details.                                    *
+ \*************************************************************************/
 
 /* Listing 53-6 */
 
@@ -16,7 +16,7 @@
    a global variable.
 
    See also thread_incr.c and thread_incr_mutex.c.
-*/
+   */
 #include <semaphore.h>
 #include <pthread.h>
 #include "tlpi_hdr.h"
@@ -24,58 +24,55 @@
 static int glob = 0;
 static sem_t sem;
 
-static void *                   /* Loop 'arg' times incrementing 'glob' */
+	static void *                   /* Loop 'arg' times incrementing 'glob' */
 threadFunc(void *arg)
 {
-    int loops = *((int *) arg);
-    int loc, j;
+	int loops = *((int *) arg);
+	int loc, j;
 
-    for (j = 0; j < loops; j++) {
-        if (sem_wait(&sem) == -1)
-            errExit("sem_wait");
+	for (j = 0; j < loops; j++) {
+		if (sem_wait(&sem) == -1)
+			errExit("sem_wait");
 
-        loc = glob;
-        loc++;
-        glob = loc;
+		loc = glob;
+		loc++;
+		glob = loc;
 
-        if (sem_post(&sem) == -1)
-            errExit("sem_post");
-    }
+		if (sem_post(&sem) == -1)
+			errExit("sem_post");
+	}
 
-    return NULL;
+	return NULL;
 }
 
-int
+	int
 main(int argc, char *argv[])
 {
-    pthread_t t1, t2;
-    int loops, s;
+	pthread_t t[atoi(argv[2])]; 
 
-    loops = (argc > 1) ? getInt(argv[1], GN_GT_0, "num-loops") : 10000000;
+	int loops, s;
 
-    /* Initialize a semaphore with the value 1 */
+	loops = (argc > 2) ? getInt(argv[1], GN_GT_0, "num-loops") : 10000000;
 
-    if (sem_init(&sem, 0, 1) == -1)
-        errExit("sem_init");
+	/* Initialize a semaphore with the value 1 */
 
-    /* Create two threads that increment 'glob' */
+	if (sem_init(&sem, 0, 1) == -1)
+		errExit("sem_init");
 
-    s = pthread_create(&t1, NULL, threadFunc, &loops);
-    if (s != 0)
-        errExitEN(s, "pthread_create");
-    s = pthread_create(&t2, NULL, threadFunc, &loops);
-    if (s != 0)
-        errExitEN(s, "pthread_create");
+	/* Create argv[2] threads that increment 'glob' */
 
-    /* Wait for threads to terminate */
+	for(int i = 0; i < atoi(argv[2]);i++){
+		s = pthread_create(&t[i], NULL, threadFunc, &loops);
+		if (s != 0)
+			errExitEN(s, "pthread_create");
+	}
 
-    s = pthread_join(t1, NULL);
-    if (s != 0)
-        errExitEN(s, "pthread_join");
-    s = pthread_join(t2, NULL);
-    if (s != 0)
-        errExitEN(s, "pthread_join");
-
-    printf("glob = %d\n", glob);
-    exit(EXIT_SUCCESS);
+	/* Wait for threads to terminate */
+	for(int i = 0; i < atoi(argv[2]);i++){
+		s = pthread_join(t[i], NULL);
+		if (s != 0)
+			errExitEN(s, "pthread_join");
+	}
+	printf("glob = %d\n", glob);
+	exit(EXIT_SUCCESS);
 }
